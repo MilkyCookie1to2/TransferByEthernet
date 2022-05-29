@@ -15,6 +15,9 @@ public:
     explicit RecieveProgress(QWidget *parent = nullptr);
     ~RecieveProgress();
 
+signals:
+    void cancel_recieve_signal();
+
 public slots:
     void begin_settings(char* );
     void set_recieve_byte(int );

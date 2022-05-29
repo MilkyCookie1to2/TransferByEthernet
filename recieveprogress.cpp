@@ -6,6 +6,7 @@ RecieveProgress::RecieveProgress(QWidget *parent) :
     ui(new Ui::RecieveProgress)
 {
     ui->setupUi(this);
+    this->setWindowTitle("Data recieving progress");
 }
 
 RecieveProgress::~RecieveProgress()
@@ -46,5 +47,6 @@ void RecieveProgress::set_recieve_byte(int recieved)
 
 void RecieveProgress::reject()
 {
+    emit cancel_recieve_signal();
     QDialog::reject();
 }

@@ -6,9 +6,15 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>400</width>
+    <width>300</width>
     <height>115</height>
    </rect>
+  </property>
+  <property name="font">
+   <font>
+    <family>Product Sans</family>
+    <pointsize>12</pointsize>
+   </font>
   </property>
   <property name="windowTitle">
    <string>Dialog</string>
@@ -25,6 +31,7 @@
     <widget class="QLabel" name="chs_intrf_message">
      <property name="font">
       <font>
+       <family>Product Sans</family>
        <pointsize>20</pointsize>
       </font>
      </property>

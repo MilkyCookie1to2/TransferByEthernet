@@ -23,8 +23,11 @@ private slots:
 
     void on_ok_button_clicked();
 
+    void reject();
+
 private:
     Ui::ChooseInterface *ui;
+    bool no_exit;
 };
 
 #endif // CHOOSEINTERFACE_H

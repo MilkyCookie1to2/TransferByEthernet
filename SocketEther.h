@@ -15,18 +15,28 @@
 #include <linux/if_arp.h>
 #include "sendprogress.h"
 #include "recieveprogress.h"
+#include <QObject>
 
 #define ETH_FRAME_SIZE 1518
 #define ETH_P_NULL 0x0
 
-class SocketEther{
+#define SUCCESS (0)
+#define UNKNOWN_ERROR (-1)
+#define REQUEST_NOT_ACCEPT (-2)
+#define RESPONSE_WAITING_TIME_OUT (-3)
+#define ABORT (-4)
+#define ERROR_CREATE_FILE (-5)
+
+class SocketEther : public QObject{
+
+    Q_OBJECT
 
 private:
     int socket_descriptor;
     struct sockaddr_ll socket_address;
 
 public:
-    SocketEther(int index_interface){
+    SocketEther( int index_interface){
         socket_descriptor = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
         socket_address.sll_family   = PF_PACKET;
         socket_address.sll_protocol = htons(ETH_P_IP);
@@ -40,7 +50,7 @@ public:
 
     }
 
-    int send_file(unsigned char* src_mac, unsigned char* dst_mac, char* path_file, SendProgress *win){
+    int send_file(unsigned char* src_mac, unsigned char* dst_mac, char* path_file){
         FILE *file;
         file = fopen(path_file, "rb");
         if(!file)
@@ -52,10 +62,9 @@ public:
         fseek(file, 0, SEEK_END);
         signed long size = ftell(file);
         fseek(file, 0, SEEK_SET);    
-        puts(name_file);
+
         unsigned char* buffer = nullptr;
-        buffer = (unsigned char*)malloc(ETH_FRAME_SIZE);     //Frame
-        puts("dfsd");
+        buffer = (unsigned char*)malloc(ETH_FRAME_SIZE);                        //Frame
         unsigned char* etherhead = buffer;	                                    //Pointer to ethernet header
         unsigned char* data = buffer + 14;                                      //Pointer to data
         struct ethhdr *eh = (struct ethhdr *)etherhead;                         //Pointer to ethernet header
@@ -101,7 +110,7 @@ public:
                               sizeof(socket_address));
             if (sent == -1) {
                 perror("ERROR_Send_Data");
-                return -1;
+                return UNKNOWN_ERROR;
             }
             //Wait for response packet 30 sec
             time_t now = time(0), tlimit = now + 30;
@@ -109,29 +118,31 @@ public:
                 int length = recvfrom(socket_descriptor, buffer, ETH_FRAME_SIZE, 0, NULL, NULL);
                 if (length == -1) {
                     perror("ERROR_Answer_Destination");
-                    return -1;
+                    return UNKNOWN_ERROR;
                 }
 
-                if (eh->h_proto == ETH_P_NULL && memcmp( (const void*)eh->h_dest, (const void*)src_mac, ETH_ALEN) == 0 )
+                if (eh->h_proto == ETH_P_NULL && memcmp( (const void*)eh->h_dest, (const void*)src_mac, ETH_ALEN) == 0 && memcmp( (const void*)eh->h_source, (const void*)dst_mac, ETH_ALEN) == 0)
                 {
                     if(!send_file_name)
                     {
                         if(memcmp(data,"YES",3)==0) {
                             send_file_name = true;
-                            win->set_range(size);
+                            emit set_range_signal(size);
                             break;
                         }
                         else
                         {
                             puts("REQUEST_NOT_ACCEPT");
-                            return -1;
+                            return REQUEST_NOT_ACCEPT;
                         }
                     }
                     else
                     {
                         if(memcmp(data, "OK", 2)==0) {
-                            win->set_progress(size_to_send);
+                            emit set_progress_send_signal(size_to_send);
                             break;
+                        } else {
+                            return ABORT;
                         }
                     }
                 }
@@ -139,18 +150,15 @@ public:
                 if ((now = time(0)) > tlimit)
                 {
                     puts("RESPONSE_WAITING_TIME_OUT");
-                    return -1;
+                    return RESPONSE_WAITING_TIME_OUT;
                 }
             }
         }while(!end_send_file);
-        return 0;
+        return SUCCESS;
     }
 
-    int receive_file(unsigned char *buffer_request, unsigned char* src_mac,unsigned char *response,char*file_name, RecieveProgress *win)
+    int receive_file(unsigned char *src_mac, unsigned char* dst_mac, char*file_name)
     {
-        send_answer(buffer_request, src_mac, response);
-        if(strcmp((char*)response, "NO")==0)
-            return 0;
         unsigned char* buffer = (unsigned char*)malloc(ETH_FRAME_SIZE);     //Frame
         unsigned char* etherhead = buffer;	                                    //Pointer to ethernet header
         unsigned char* data = buffer + 14;                                      //Pointer to data
@@ -161,42 +169,42 @@ public:
         if(!f)
         {
             perror("ERROR_Create_File");
-            return -1;
+            return ERROR_CREATE_FILE;
         }
         fclose(f);
 
         time_t now = time(0), tlimit = now + 5;
         while (1) {
-            /*Wait for incoming packet...*/
             int length = recvfrom(socket_descriptor, buffer, ETH_FRAME_SIZE, 0, NULL, NULL);
             if (length == -1) {
                 perror("ERROR_RECEIVE_PACKET");
-                return NULL;
+                return UNKNOWN_ERROR;
             }
 
-            /*See if we should answer (Ethertype == 0x0 && destination address == our MAC)*/
-            if (eh->h_proto == ETH_P_NULL && memcmp( (const void*)eh->h_dest, (const void*)src_mac, ETH_ALEN) == 0 ) {
+            if (eh->h_proto == ETH_P_NULL && memcmp( (const void*)eh->h_dest, (const void*)src_mac, ETH_ALEN) == 0 && memcmp( (const void*)eh->h_source, (const void*)dst_mac, ETH_ALEN) == 0) {
                 now = time(0), tlimit = now + 5;
-                win->set_recieve_byte(length);
+                emit set_progress_recieve_signal(length);
                 if(memcmp(data, "END_DATA", 8)==0) {
-                    if(send_answer(buffer, src_mac, (unsigned char*)"OK")!=0)
-                        return -1;
-                    return 0;
+                    if(send_message(src_mac, dst_mac, (char *)"OK")!=0)
+                        return UNKNOWN_ERROR;
+                    return SUCCESS;
                 }
                 else {
+                    if(memcmp(data, "ABORT", 5)==0)
+                        return ABORT;
                     f = fopen(file_name, "ab");
                     fwrite(data, sizeof(char), length - 14, f);
                     fclose(f);
                 }
 
-                if(send_answer(buffer, src_mac, (unsigned char*)"OK")!=0)
-                    return -1;
+                if(send_message(src_mac, dst_mac, (char *)"OK")!=0)
+                    return UNKNOWN_ERROR;
             }
 
             if ((now = time(0)) > tlimit)
             {
                 puts("RESPONSE_WAITING_TIME_OUT");
-                return -1;
+                return RESPONSE_WAITING_TIME_OUT;
             }
         }
     }
@@ -209,52 +217,59 @@ public:
         struct ethhdr *eh = (struct ethhdr *)etherhead;                         //Pointer to ethernet header
 
         while (1) {
-            /*Wait for incoming packet...*/
             int length = recvfrom(socket_descriptor, buffer, ETH_FRAME_SIZE, 0, NULL, NULL);
             if (length == -1) {
                 perror("ERROR_RECEIVE_PACKET");
                 return NULL;
             }
 
-            /*See if we should answer (Ethertype == 0x0 && destination address == our MAC)*/
             if (eh->h_proto == ETH_P_NULL && memcmp( (const void*)eh->h_dest, (const void*)src_mac, ETH_ALEN) == 0 ) {
                 return buffer;
             }
         }
     }
 
-private:
-
-    int send_answer(unsigned char* buffer, unsigned char* src_mac, unsigned char* answer)
-    {
+    int send_message(unsigned char* src_mac, unsigned char* dst_mac, char* message){
+        unsigned char* buffer = (unsigned char*)malloc(ETH_FRAME_SIZE);          //Frame
         unsigned char* etherhead = buffer;	                                    //Pointer to ethernet header
         unsigned char* data = buffer + 14;                                      //Pointer to data
         struct ethhdr *eh = (struct ethhdr *)etherhead;                         //Pointer to ethernet header
-
-        /*exchange addresses in buffer*/
-        memcpy( (void*)etherhead, (const void*)(etherhead+ETH_ALEN), ETH_ALEN);
-        memcpy( (void*)(etherhead+ETH_ALEN), (const void*)src_mac, ETH_ALEN);
-        memcpy(data, answer, sizeof answer);
-
-        /*prepare sockaddr_ll*/
-        socket_address.sll_addr[0]  = eh->h_dest[0];
-        socket_address.sll_addr[1]  = eh->h_dest[1];
-        socket_address.sll_addr[2]  = eh->h_dest[2];
-        socket_address.sll_addr[3]  = eh->h_dest[3];
-        socket_address.sll_addr[4]  = eh->h_dest[4];
-        socket_address.sll_addr[5]  = eh->h_dest[5];
+        //set destination mac address
+        socket_address.sll_addr[0]  = dst_mac[0];
+        socket_address.sll_addr[1]  = dst_mac[1];
+        socket_address.sll_addr[2]  = dst_mac[2];
+        socket_address.sll_addr[3]  = dst_mac[3];
+        socket_address.sll_addr[4]  = dst_mac[4];
+        socket_address.sll_addr[5]  = dst_mac[5];
         socket_address.sll_addr[6]  = 0x00;
         socket_address.sll_addr[7]  = 0x00;
 
         eh->h_proto = ETH_P_NULL;
-        /*send answer*/
-        int sent = sendto(socket_descriptor, buffer, sizeof(answer)+ETH_HLEN, 0, (struct sockaddr*)&socket_address, sizeof(socket_address));
+
+        memcpy(buffer, dst_mac, ETH_ALEN);
+        memcpy(buffer + ETH_ALEN, src_mac, ETH_ALEN);
+        memcpy(data, message, strlen(message)+1);
+
+        int sent = sendto(socket_descriptor, buffer, (sizeof(message))+ETH_HLEN, 0, (struct sockaddr*)&socket_address, sizeof(socket_address));
         if (sent == -1) {
             perror("ERROR_Send_Answer");
-            return -1;
+            return UNKNOWN_ERROR;
         }
-        return 0;
+        return SUCCESS;
     }
+
+    void clear_socket(){
+        unsigned char* buffer = (unsigned char*)malloc(ETH_FRAME_SIZE);
+        for(int i=0; i<10;i++)
+            recvfrom(socket_descriptor, buffer, ETH_FRAME_SIZE, MSG_DONTWAIT, NULL, NULL);
+    }
+
+signals:
+    void set_progress_send_signal(int);
+    void set_range_signal(int);
+    void set_progress_recieve_signal(int);
+
+private:
 
     char* get_file_name(char* path_file)
     {
@@ -269,7 +284,6 @@ private:
                     bg--;
                 strcat(name_file, path_file+bg);
                 name_file[strlen(path_file)-i+10-1] = '\0';
-                //strcat(name_file, "/");
                 break;
             }
         }

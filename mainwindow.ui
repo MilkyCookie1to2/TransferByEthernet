@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
-    <height>600</height>
+    <width>750</width>
+    <height>500</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -15,58 +15,120 @@
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout_2">
-    <item row="0" column="0">
-     <widget class="QLabel" name="interface_message">
-      <property name="text">
-       <string>Interface:</string>
-      </property>
-     </widget>
-    </item>
-    <item row="4" column="0">
-     <widget class="QPushButton" name="add_file_button">
-      <property name="text">
-       <string>Add file</string>
-      </property>
-     </widget>
-    </item>
     <item row="4" column="4">
      <widget class="QPushButton" name="send_button">
+      <property name="font">
+       <font>
+        <family>Product Sans</family>
+        <pointsize>12</pointsize>
+        <bold>false</bold>
+       </font>
+      </property>
       <property name="text">
        <string>Send</string>
       </property>
      </widget>
     </item>
-    <item row="1" column="0" colspan="2">
-     <widget class="QLabel" name="src_mac_address">
-      <property name="text">
-       <string>Source MAC address:</string>
+    <item row="3" column="0" colspan="5">
+     <widget class="QTableWidget" name="table_files">
+      <property name="font">
+       <font>
+        <family>Product Sans</family>
+        <pointsize>12</pointsize>
+       </font>
       </property>
      </widget>
     </item>
-    <item row="2" column="0">
-     <widget class="QLabel" name="files_to_sen_message">
+    <item row="4" column="0">
+     <widget class="QPushButton" name="add_file_button">
+      <property name="font">
+       <font>
+        <family>Product Sans</family>
+        <pointsize>12</pointsize>
+        <bold>false</bold>
+       </font>
+      </property>
       <property name="text">
-       <string>Files to send:</string>
+       <string>Add file</string>
       </property>
      </widget>
     </item>
-    <item row="1" column="2">
+    <item row="1" column="3">
      <widget class="QLabel" name="dst_mac_address_message">
+      <property name="font">
+       <font>
+        <family>Product Sans</family>
+        <pointsize>12</pointsize>
+        <bold>false</bold>
+       </font>
+      </property>
       <property name="text">
        <string>Destination MAC address:</string>
       </property>
      </widget>
     </item>
-    <item row="1" column="3">
-     <widget class="QComboBox" name="list_of_dst_macs"/>
+    <item row="2" column="0">
+     <widget class="QLabel" name="files_to_sen_message">
+      <property name="font">
+       <font>
+        <family>Product Sans</family>
+        <pointsize>12</pointsize>
+        <bold>false</bold>
+       </font>
+      </property>
+      <property name="text">
+       <string>Files to send:</string>
+      </property>
+     </widget>
     </item>
-    <item row="3" column="0" colspan="5">
-     <widget class="QTableWidget" name="table_files"/>
+    <item row="0" column="0">
+     <widget class="QLabel" name="interface_message">
+      <property name="font">
+       <font>
+        <family>Product Sans</family>
+        <pointsize>12</pointsize>
+        <bold>false</bold>
+       </font>
+      </property>
+      <property name="text">
+       <string>Interface:</string>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="0" colspan="2">
+     <widget class="QLabel" name="src_mac_address">
+      <property name="font">
+       <font>
+        <family>Product Sans</family>
+        <pointsize>12</pointsize>
+        <bold>false</bold>
+       </font>
+      </property>
+      <property name="text">
+       <string>Source MAC address:</string>
+      </property>
+     </widget>
     </item>
     <item row="1" column="4">
-     <widget class="QPushButton" name="update_arp_button">
-      <property name="text">
-       <string>Update</string>
+     <widget class="QComboBox" name="list_of_dst_macs">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>150</width>
+        <height>0</height>
+       </size>
+      </property>
+      <property name="font">
+       <font>
+        <family>Product Sans</family>
+        <pointsize>12</pointsize>
+        <bold>false</bold>
+       </font>
       </property>
      </widget>
     </item>
@@ -77,7 +139,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>800</width>
+     <width>750</width>
      <height>23</height>
     </rect>
    </property>

@@ -11,8 +11,18 @@
 #include "sendprogress.h"
 #include "chooseinterface.h"
 #include <QProgressBar>
+#include <QDrag>
+#include <QDragMoveEvent>
+#include <QDragEnterEvent>
+#include <QMimeData>
 #include "recieveprogress.h"
-#include <QMutex>
+
+#define SUCCESS (0)
+#define UNKNOWN_ERROR (-1)
+#define REQUEST_NOT_ACCEPT (-2)
+#define RESPONSE_WAITING_TIME_OUT (-3)
+#define ABORT (-4)
+#define ERROR_CREATE_FILE (-5)
 
 
 QT_BEGIN_NAMESPACE
@@ -31,11 +41,12 @@ signals:
     void send_finished();
     void recieve_begin_signal(char*);
     void recieve_end_signal();
+    void answer_request_signal(unsigned char*);
+    void set_begin_settings_signal(QString);
+    void print_message_signal(int, QString);
 
 
 private slots:
-    void on_update_arp_button_clicked();
-
     void set_name_interface(QString);
     void set_src_mac(const char*);
     void set_arp_list(const char*);
@@ -49,13 +60,22 @@ private slots:
     void send_fun();
 
     void cancel_send();
+    void cancel_recieve();
 
     void close_send_win();
 
     void recieve_fun();
 
+    void listen_fun();
+
     void recieve_begin(char*);
     void recieve_end();
+    void answer_request(unsigned char*);
+
+    void print_message(int, QString);
+
+    void dragEnterEvent(QDragEnterEvent *);
+    void dropEvent(QDropEvent *);
 
 private:
     Ui::MainWindow *ui;
@@ -71,5 +91,8 @@ private:
     RecieveProgress *recieve_progress_win;
     QThread *send_thread;
     QThread *recieve_thread;
+    QThread *listen_thread;
+    char*name_file;
+    bool abort_flag;
 };
 #endif // MAINWINDOW_H

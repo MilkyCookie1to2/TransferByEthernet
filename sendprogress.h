@@ -2,6 +2,8 @@
 #define SENDPROGRESS_H
 
 #include <QDialog>
+#include <QTimer>
+#include <QTime>
 
 namespace Ui {
 class SendProgress;
@@ -17,12 +19,11 @@ public:
     explicit SendProgress(QWidget *parent = nullptr);
     ~SendProgress();
 
-    void set_begin_settings(QString);
-
 signals:
     void cancel_send_signal();
 
 public slots:
+    void set_begin_settings(QString);
     void set_progress(int );
     void set_range(int);
     void reject();
